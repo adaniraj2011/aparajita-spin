@@ -229,6 +229,8 @@ footer .brand{justify-content:center;margin-bottom:10px}
 .e-fine{font-size:.76rem;color:#6e4a52;text-align:center;margin:12px 0 0}
 .e-close{position:absolute;top:16px;right:18px;z-index:2;width:34px;height:34px;border-radius:50%;border:1px solid rgba(107,16,40,.35);background:#fff;color:var(--maroon);font-size:1.1rem;line-height:1;cursor:pointer}
 .ticket .t-name{font-family:var(--f-display);font-weight:600;letter-spacing:.12em;font-size:.85rem;color:#5a1a2c;margin:0 0 14px}
+.spin-btn.ready{animation:readyPulse 1.2s ease-in-out infinite}
+@keyframes readyPulse{50%{transform:scale(1.07);box-shadow:0 0 0 2px var(--bg),0 0 0 3px var(--gold),0 0 34px 10px rgba(201,160,72,.6)}}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:60;width:100%;height:100%}
 @media (prefers-reduced-motion:reduce){.halo,.bulbs span,.rays,.sparkle{animation:none}.ticket{animation:none}}
 </style>
@@ -590,7 +592,7 @@ footer .brand{justify-content:center;margin-bottom:10px}
     eBtn.disabled = true; eBtn.textContent = "Checking…";
     try{
       const r = await register(name, phone);
-      if(r.status === "new"){ closeEntry(); spin(r); }
+      if(r.status === "new"){ closeEntry(); armSpin(r); }
       else if(r.status === "exists"){ closeEntry(); showResult(r, false, true); }
       else { eErr.textContent = r.message || "Something went wrong. Please try again."; }
     }catch(err){ eErr.textContent = "Couldn't connect. Check your internet and try again."; }
@@ -633,8 +635,21 @@ footer .brand{justify-content:center;margin-bottom:10px}
     document.getElementById("modal").hidden = false;
     if(celebrate){ chime(); confetti(); }
   }
-  function resetForNext(){ document.getElementById("modal").hidden = true; btn.disabled=false; form.reset(); }
-  btn.onclick = openEntry;
+  let pending = null;
+  const defaultNote = note.textContent;
+  function armSpin(r){
+    pending = r;
+    btn.textContent = "Spin Now"; btn.classList.add("ready"); btn.disabled = false;
+    note.textContent = "Welcome, " + r.name.split(" ")[0] + "! Tap SPIN NOW to spin the royal wheel.";
+    btn.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+  function startSpin(){
+    if(spinning) return;
+    if(pending){ const r = pending; pending = null; btn.classList.remove("ready"); btn.textContent = "Spinning…"; spin(r); }
+    else openEntry();
+  }
+  function resetForNext(){ document.getElementById("modal").hidden = true; btn.disabled=false; btn.textContent="Start"; btn.classList.remove("ready"); note.textContent=defaultNote; pending=null; form.reset(); }
+  btn.onclick = startSpin;
   setTimeout(openEntry, 600); /* show the details form as soon as the page opens */
   document.getElementById("closeModal").onclick = resetForNext;
   document.getElementById("nextGuest").onclick = () => { resetForNext(); openEntry(); };
